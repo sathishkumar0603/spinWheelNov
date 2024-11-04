@@ -10,36 +10,47 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.wf.spinnify.entity.WfAreaManagerWinners;
 import com.wf.spinnify.entity.WfAreaManagersList;
 import com.wf.spinnify.entity.WfRegionalManagersEntity;
 import com.wf.spinnify.entity.WfStoreList;
+import com.wf.spinnify.entity.WfStoreWinners;
 import com.wf.spinnify.model.AmDetails;
 import com.wf.spinnify.model.AmWinnersResponse;
 import com.wf.spinnify.model.StoreWinnersResponse;
+import com.wf.spinnify.repository.WfAmWinnersRepository;
 import com.wf.spinnify.repository.WfAreaManagersListRepository;
 import com.wf.spinnify.repository.WfRegionalManagersRepository;
 import com.wf.spinnify.repository.WfStoreListRepository;
+import com.wf.spinnify.repository.WfStoreWinnersRepository;
 
 import java.io.InputStream;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class SpinService {
 
-	WfRegionalManagersRepository regionalManagersRepository;
-	WfAreaManagersListRepository areaManagersListRepository;
-	WfStoreListRepository wfStoreListRepository;
+	private WfRegionalManagersRepository regionalManagersRepository;
+	private WfAreaManagersListRepository areaManagersListRepository;
+	private WfStoreListRepository wfStoreListRepository;
+	private WfStoreWinnersRepository wfStoreWinnersRepository;
+	private WfAmWinnersRepository wfAreaManagerWinnersRepository;
 
 	@Autowired
 	public SpinService(WfRegionalManagersRepository regionalManagersRepository,
-			WfAreaManagersListRepository areaManagersListRepository, WfStoreListRepository wfStoreListRepository) {
+			WfAreaManagersListRepository areaManagersListRepository, WfStoreListRepository wfStoreListRepository,
+			WfStoreWinnersRepository wfStoreWinnersRepository, WfAmWinnersRepository wfAreaManagerWinnersRepository) {
 		this.regionalManagersRepository = regionalManagersRepository;
 		this.areaManagersListRepository = areaManagersListRepository;
 		this.wfStoreListRepository = wfStoreListRepository;
+		this.wfStoreWinnersRepository = wfStoreWinnersRepository;
+		this.wfAreaManagerWinnersRepository = wfAreaManagerWinnersRepository;
 	}
 
 	public String extractData(MultipartFile rm, MultipartFile am, MultipartFile store) {
@@ -210,27 +221,43 @@ public class SpinService {
 
 		try {
 			List<WfRegionalManagersEntity> entities = regionalManagersRepository.findAll();
+			List<WfStoreWinners> storeWinnersList = wfStoreWinnersRepository.findAll();
+			if (!storeWinnersList.isEmpty()) {
+				wfStoreWinnersRepository.deleteAll();
+			}
 
 			for (WfRegionalManagersEntity wfRegionalManagersEntity : entities) {
 				List<WfStoreList> allStores = wfStoreListRepository
 						.findAllByRmNameIgnoreCase(wfRegionalManagersEntity.getName());
 
 				int storeCount = allStores.size();
-				int winnerCount = (int) Math.round(storeCount * 0.2); // Calculate 20% and round to nearest integer
+				int winnerCount = (int) Math.round(storeCount * 0.2);
 
-				// Randomly select 20% of the stores
-				List<String> allStoreNames = allStores.stream().map(WfStoreList::getStoreName)
-						.collect(Collectors.toList());
-				List<String> storeWinners = new ArrayList<>(allStoreNames);
-				Collections.shuffle(storeWinners);
-				storeWinners = storeWinners.subList(0, Math.min(winnerCount, storeWinners.size()));
+				// Map store names to store codes
+				Map<String, String> storeNameToCodeMap = allStores.stream()
+						.collect(Collectors.toMap(WfStoreList::getStoreName, WfStoreList::getStoreCode));
+
+				// Randomly select 20% of the store names
+				List<String> allStoreNames = new ArrayList<>(storeNameToCodeMap.keySet());
+				Collections.shuffle(allStoreNames);
+				List<String> storeWinners = allStoreNames.subList(0, Math.min(winnerCount, allStoreNames.size()));
+
+				for (String winnerStoreName : storeWinners) {
+					WfStoreWinners winnerEntity = new WfStoreWinners();
+					winnerEntity.setWinnerStoreName(winnerStoreName);
+					winnerEntity.setStoreCode(storeNameToCodeMap.get(winnerStoreName));
+					winnerEntity.setRmName(wfRegionalManagersEntity.getName());
+					winnerEntity.setCreatedDate(LocalDate.now().toString());
+
+					wfStoreWinnersRepository.save(winnerEntity);
+				}
 
 				// Create response object
 				StoreWinnersResponse response = new StoreWinnersResponse();
 				response.setEmpCode(wfRegionalManagersEntity.getRmEmpCode());
 				response.setUrl(wfRegionalManagersEntity.getUrl());
 				response.setRmName(wfRegionalManagersEntity.getName());
-				response.setStoreName(allStoreNames);
+				response.setStoreName(new ArrayList<>(storeNameToCodeMap.keySet()));
 				response.setStoreCount(String.valueOf(storeCount));
 				response.setStoreWinners(storeWinners);
 
@@ -247,6 +274,11 @@ public class SpinService {
 
 		try {
 			List<WfRegionalManagersEntity> entities = regionalManagersRepository.findAll();
+			List<WfAreaManagerWinners> allAmNamesList = wfAreaManagerWinnersRepository.findAll();
+
+			if (!allAmNamesList.isEmpty()) {
+				wfAreaManagerWinnersRepository.deleteAll();
+			}
 
 			for (WfRegionalManagersEntity wfRegionalManagersEntity : entities) {
 				List<WfAreaManagersList> areaManagersLists = areaManagersListRepository
@@ -266,8 +298,25 @@ public class SpinService {
 					amDetail.setAmUrl(am.getUrl());
 					return amDetail;
 				}).collect(Collectors.toList());
+
 				Collections.shuffle(amWinners); // Shuffle for randomness
 				amWinners = amWinners.subList(0, Math.min(winnerCount, amWinners.size()));
+
+				// Save winners in WfAreaManagerWinners entity
+				for (AmDetails winner : amWinners) {
+					WfAreaManagerWinners winnerEntity = new WfAreaManagerWinners();
+					winnerEntity.setWinnerAmName(winner.getAmName());
+
+					// Get the matching WfAreaManagersList object to retrieve empCode
+					areaManagersLists.stream().filter(am -> am.getAmName().equals(winner.getAmName())).findFirst()
+							.ifPresent(am -> winnerEntity.setAmEmpCode(am.getAmEmpCode()));
+
+					winnerEntity.setRmName(wfRegionalManagersEntity.getName());
+					winnerEntity.setCreatedDate(LocalDate.now().toString());
+
+					// Save the winner entity
+					wfAreaManagerWinnersRepository.save(winnerEntity);
+				}
 
 				// Create response object
 				AmWinnersResponse response = new AmWinnersResponse();
@@ -277,6 +326,7 @@ public class SpinService {
 				response.setAmDetails(allAmNames); // Full AM names list
 				response.setAmCount(String.valueOf(amCount));
 				response.setAmWinners(amWinners); // Selected winners
+
 				// Add to response list
 				responses.add(response);
 			}
@@ -285,4 +335,5 @@ public class SpinService {
 		}
 		return responses;
 	}
+
 }
