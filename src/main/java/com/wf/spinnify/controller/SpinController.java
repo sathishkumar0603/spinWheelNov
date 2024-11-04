@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.wf.spinnify.entity.WfAreaManagersList;
 import com.wf.spinnify.model.AmWinnersResponse;
 import com.wf.spinnify.model.StoreWinnersResponse;
+import com.wf.spinnify.model.WfStoreWinnersListDownload;
 import com.wf.spinnify.service.SpinService;
 
 @RestController
@@ -60,7 +61,7 @@ public class SpinController {
 			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
-	
+
 	@GetMapping("/getAmWinners")
 	public ResponseEntity<List<AmWinnersResponse>> getAmWinners() {
 		try {
@@ -75,5 +76,40 @@ public class SpinController {
 			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
+
+	@GetMapping("/downloadStoreWinners")
+	public ResponseEntity<WfStoreWinnersListDownload> downloadStoreWinner() {
+		WfStoreWinnersListDownload listResponse = null;
+		try {
+			listResponse = spinService.downloadStoreCsv();
+			if (listResponse != null) {
+				return new ResponseEntity<>(listResponse, HttpStatus.OK);
+			} else {
+				return new ResponseEntity<>(listResponse, HttpStatus.NOT_FOUND);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+
+	}
+	
+	@GetMapping("/downloadAmCsv")
+	public ResponseEntity<WfStoreWinnersListDownload> download() {
+		WfStoreWinnersListDownload listResponse = null;
+		try {
+			listResponse = spinService.downloadAmWinnersCsv();
+			if (listResponse != null) {
+				return new ResponseEntity<>(listResponse, HttpStatus.OK);
+			} else {
+				return new ResponseEntity<>(listResponse, HttpStatus.NOT_FOUND);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+
+	}
+
 
 }

@@ -15,9 +15,11 @@ import com.wf.spinnify.entity.WfAreaManagersList;
 import com.wf.spinnify.entity.WfRegionalManagersEntity;
 import com.wf.spinnify.entity.WfStoreList;
 import com.wf.spinnify.entity.WfStoreWinners;
+import com.wf.spinnify.helper.SpinHelper;
 import com.wf.spinnify.model.AmDetails;
 import com.wf.spinnify.model.AmWinnersResponse;
 import com.wf.spinnify.model.StoreWinnersResponse;
+import com.wf.spinnify.model.WfStoreWinnersListDownload;
 import com.wf.spinnify.repository.WfAmWinnersRepository;
 import com.wf.spinnify.repository.WfAreaManagersListRepository;
 import com.wf.spinnify.repository.WfRegionalManagersRepository;
@@ -41,16 +43,19 @@ public class SpinService {
 	private WfStoreListRepository wfStoreListRepository;
 	private WfStoreWinnersRepository wfStoreWinnersRepository;
 	private WfAmWinnersRepository wfAreaManagerWinnersRepository;
+	private SpinHelper helper;
 
 	@Autowired
 	public SpinService(WfRegionalManagersRepository regionalManagersRepository,
 			WfAreaManagersListRepository areaManagersListRepository, WfStoreListRepository wfStoreListRepository,
-			WfStoreWinnersRepository wfStoreWinnersRepository, WfAmWinnersRepository wfAreaManagerWinnersRepository) {
+			WfStoreWinnersRepository wfStoreWinnersRepository, WfAmWinnersRepository wfAreaManagerWinnersRepository,
+			SpinHelper helper) {
 		this.regionalManagersRepository = regionalManagersRepository;
 		this.areaManagersListRepository = areaManagersListRepository;
 		this.wfStoreListRepository = wfStoreListRepository;
 		this.wfStoreWinnersRepository = wfStoreWinnersRepository;
 		this.wfAreaManagerWinnersRepository = wfAreaManagerWinnersRepository;
+		this.helper = helper;
 	}
 
 	public String extractData(MultipartFile rm, MultipartFile am, MultipartFile store) {
@@ -334,6 +339,52 @@ public class SpinService {
 			e.printStackTrace();
 		}
 		return responses;
+	}
+
+	public WfStoreWinnersListDownload downloadStoreCsv() {
+		WfStoreWinnersListDownload listResponse = new WfStoreWinnersListDownload();
+		try {
+
+			String base64String = helper.convertToStoreCsvFile();
+			if (!base64String.isEmpty()) {
+				listResponse.setStatus(true);
+				listResponse.setMessage("Download Successful");
+				listResponse.setData(base64String);
+			} else {
+				listResponse.setStatus(false);
+				listResponse.setMessage("Download Failed");
+				listResponse.setData(base64String);
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			listResponse.setStatus(false);
+			listResponse.setMessage("Download Failed: " + e.getMessage());
+		}
+		return listResponse;
+	}
+
+	public WfStoreWinnersListDownload downloadAmWinnersCsv() {
+		WfStoreWinnersListDownload listResponse = new WfStoreWinnersListDownload();
+		try {
+
+			String base64String = helper.convertToAmCsvFile();
+			if (!base64String.isEmpty()) {
+				listResponse.setStatus(true);
+				listResponse.setMessage("Download Successful");
+				listResponse.setData(base64String);
+			} else {
+				listResponse.setStatus(false);
+				listResponse.setMessage("Download Failed");
+				listResponse.setData(base64String);
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			listResponse.setStatus(false);
+			listResponse.setMessage("Download Failed: " + e.getMessage());
+		}
+		return listResponse;
 	}
 
 }
