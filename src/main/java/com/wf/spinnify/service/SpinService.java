@@ -325,7 +325,7 @@ public class SpinService {
 				List<WfAreaManagersList> areaManagersListsNew = areaManagersListRepository
 						.findAllByRmNameIgnoreCase(wfRegionalManagersEntity.getName()).stream()
 						.collect(Collectors.toList());
-				int amCount = areaManagersLists.size();
+				int amCount = areaManagersListsNew.size();
 				int winnerCount = (int) Math.ceil(amCount * 0.2); // Calculate 20%
 
 				// Randomly select 20% winners and map to AmDetails
