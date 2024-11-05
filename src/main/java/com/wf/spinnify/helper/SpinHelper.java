@@ -4,13 +4,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.apache.poi.ss.usermodel.Row;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-
 import com.wf.spinnify.entity.WfAreaManagerWinners;
 import com.wf.spinnify.entity.WfStoreWinners;
 import com.wf.spinnify.repository.WfAmWinnersRepository;
@@ -22,7 +22,6 @@ public class SpinHelper {
 	private WfStoreWinnersRepository storeWinnersRepository;
 	private WfAmWinnersRepository amWinnersRepository;
 
-	@Autowired
 	public SpinHelper(WfStoreWinnersRepository storeWinnersRepository, WfAmWinnersRepository amWinnersRepository) {
 		this.storeWinnersRepository = storeWinnersRepository;
 		this.amWinnersRepository = amWinnersRepository;
@@ -85,6 +84,18 @@ public class SpinHelper {
 				byte[] excelBytes = out.toByteArray();
 				return Base64.getEncoder().encodeToString(excelBytes);
 			}
+		}
+	}
+
+	public <T> void customShuffle(List<T> list) {
+		ThreadLocalRandom random = ThreadLocalRandom.current();
+
+		for (int i = list.size() - 1; i > 0; i--) {
+			int j = random.nextInt(i + 1);
+			// Swap elements at positions i and j
+			T temp = list.get(i);
+			list.set(i, list.get(j));
+			list.set(j, temp);
 		}
 	}
 
