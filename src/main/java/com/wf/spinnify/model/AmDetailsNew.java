@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Data
 @JsonInclude(Include.NON_NULL)
-public class AmDetails {
+public class AmDetailsNew {
 	private String amName;
 	private String amUrl;
 	private String code;

@@ -9,7 +9,7 @@ public class AmWinnersResponse {
 	private String empCode;
 	private String url;
 	private String rmName;
-	private List<String> amDetails;
+	private List<AmDetailsNew> amDetails;
 	private String amCount;
 	private List<AmDetails> amWinners;
 }

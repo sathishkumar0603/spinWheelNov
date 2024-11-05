@@ -17,6 +17,7 @@ import com.wf.spinnify.entity.WfStoreList;
 import com.wf.spinnify.entity.WfStoreWinners;
 import com.wf.spinnify.helper.SpinHelper;
 import com.wf.spinnify.model.AmDetails;
+import com.wf.spinnify.model.AmDetailsNew;
 import com.wf.spinnify.model.AmWinnersResponse;
 import com.wf.spinnify.model.StoreWinnersResponse;
 import com.wf.spinnify.model.Stores;
@@ -318,20 +319,28 @@ public class SpinService {
 				// Filter out previous winners from the area manager list
 				List<WfAreaManagersList> areaManagersLists = areaManagersListRepository
 						.findAllByRmNameIgnoreCase(wfRegionalManagersEntity.getName()).stream()
-						.filter(am -> !previousWinnerNames.contains(am.getAmName())).collect(Collectors.toList());
-
+						.filter(am -> previousWinnerNames == null || previousWinnerNames.isEmpty()
+								|| !previousWinnerNames.contains(am.getAmName()))
+						.collect(Collectors.toList());
+				List<WfAreaManagersList> areaManagersListsNew = areaManagersListRepository
+						.findAllByRmNameIgnoreCase(wfRegionalManagersEntity.getName()).stream()
+						.collect(Collectors.toList());
 				int amCount = areaManagersLists.size();
 				int winnerCount = (int) Math.ceil(amCount * 0.2); // Calculate 20%
-
-				// Collect all AM names for "amnames"
-				List<String> allAmNames = areaManagersLists.stream().map(WfAreaManagersList::getAmName)
-						.collect(Collectors.toList());
 
 				// Randomly select 20% winners and map to AmDetails
 				List<AmDetails> amWinners = areaManagersLists.stream().map(am -> {
 					AmDetails amDetail = new AmDetails();
 					amDetail.setAmName(am.getAmName());
 					amDetail.setAmUrl(am.getUrl());
+					amDetail.setCode(am.getAmEmpCode());
+					return amDetail;
+				}).collect(Collectors.toList());
+				List<AmDetailsNew> amList = areaManagersListsNew.stream().map(am -> {
+					AmDetailsNew amDetail = new AmDetailsNew();
+					amDetail.setAmName(am.getAmName());
+					amDetail.setAmUrl(am.getUrl());
+					amDetail.setCode(am.getAmEmpCode());
 					return amDetail;
 				}).collect(Collectors.toList());
 
@@ -360,7 +369,7 @@ public class SpinService {
 				response.setEmpCode(wfRegionalManagersEntity.getRmEmpCode());
 				response.setUrl(wfRegionalManagersEntity.getUrl());
 				response.setRmName(wfRegionalManagersEntity.getName());
-				response.setAmDetails(allAmNames);
+				response.setAmDetails(amList);
 				response.setAmCount(String.valueOf(amCount));
 				response.setAmWinners(amWinners);
 
