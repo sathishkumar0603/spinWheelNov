@@ -4,6 +4,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,6 +19,7 @@ import com.wf.spinnify.service.SpinService;
 
 @RestController
 @RequestMapping("/spinnify")
+@CrossOrigin
 public class SpinController {
 
 	@Autowired
@@ -30,9 +32,9 @@ public class SpinController {
 
 	@PostMapping("/upload")
 	public ResponseEntity<String> uploadFile(@RequestParam("rm") MultipartFile rm, @RequestParam("am") MultipartFile am,
-			@RequestParam("store") MultipartFile store) {
+			@RequestParam("store") MultipartFile store,@RequestParam("rmForAm") MultipartFile rmForAm) {
 		try {
-			String listResponse = spinService.extractData(rm, am, store);
+			String listResponse = spinService.extractData(rm, am, store,rmForAm);
 			if (!(listResponse == null)) {
 				return new ResponseEntity<>(listResponse, HttpStatus.OK);
 			} else {
