@@ -391,6 +391,9 @@ public class SpinService {
 
 //				Collections.shuffle(amWinners); // Shuffle for randomness
 				helper.customShuffle(amWinners);
+				if (wfRegionalManagersEntity.getName().equalsIgnoreCase("Milind Mohite")) {
+					winnerCount += 1;
+				}
 				amWinners = amWinners.subList(0, Math.min(winnerCount, amWinners.size()));
 
 				// Save winners in WfAreaManagerWinners entity
